@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::io::{self, Write};
 
 struct Node<T> {
     value: T,
@@ -59,9 +60,13 @@ impl <T: PartialEq + Display + Clone> LinkedList<T> {
     }
 
     pub fn print(&self) {
+        self.print_to_writer(&mut io::stdout());
+    }
+
+    pub fn print_to_writer<W: Write>(&self, writer: &mut W) {
         let mut current_node = self.root.as_ref();
         while let Some(node) = current_node {
-            println!("{}", node.value);
+            writeln!(writer, "{}", node.value).unwrap();
             current_node = node.next.as_ref();
         }
     }
@@ -81,6 +86,8 @@ impl <T: PartialEq + Display + Clone> LinkedList<T> {
 #[cfg(test)]
 mod test {
     use super::*; 
+    use std::io::Cursor;
+
     #[test]
     fn test_add() {
         let mut linked_list = LinkedList::new();
@@ -161,5 +168,19 @@ mod test {
         linked_list.remove(42);
         let v = linked_list.to_vector();
         assert_eq!(v, vec![]);
+    }
+
+    #[test]
+    fn test_print() {
+        let mut linked_list = LinkedList::new();
+        linked_list.add(1);
+        linked_list.add(2);
+        linked_list.add(3);
+
+        let mut buffer = Cursor::new(Vec::new());
+        linked_list.print_to_writer(&mut buffer);
+
+        let output = String::from_utf8(buffer.into_inner()).unwrap();
+        assert_eq!(output, "1\n2\n3\n");
     }
 }
