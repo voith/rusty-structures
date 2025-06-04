@@ -5,9 +5,14 @@ A collection of basic data structures implemented in Rust, designed to help you 
 ## 🚀 Features
 
 - Singly linked list (`LinkedList`)
-- Basic operations: add, remove, print
-- Conversion to vector for easier testing
-- Clean and idiomatic Rust code
+    - Basic operations: add, remove, print
+    - Conversion to vector for easier testing
+    - Clean and idiomatic Rust code
+
+- Doubly Linked List (DoublyLinkedList)
+    - Bidirectional links (previous and next)
+    - Safe shared ownership with Rc and interior mutability using RefCell
+    - Tests that validate pointer integrity (Rc::ptr_eq)
 
 ## 🔧 Getting Started
 
