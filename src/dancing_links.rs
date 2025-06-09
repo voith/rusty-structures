@@ -1,3 +1,143 @@
+// Python code for dancing links
+// class Node:
+//     def __init__(self, row_id=None):
+//         self.left = self
+//         self.right = self
+//         self.up = self
+//         self.down = self
+//         self.column = None
+//         self.row_id = row_id  # Added to track real row indices
+
+// class ColumnNode(Node):
+//     def __init__(self, name):
+//         super().__init__()
+//         self.name = name
+//         self.size = 0
+//         self.column = self
+
+// def build_dlx_matrix(matrix):
+//     root = ColumnNode("root")
+//     column_headers = []
+
+//     # Create column headers and link them left-right
+//     for i in range(len(matrix[0])):
+//         column = ColumnNode(str(i))
+//         column_headers.append(column)
+//         column.right = root
+//         column.left = root.left
+//         root.left.right = column
+//         root.left = column
+
+//     # Create nodes
+//     for row_idx, row in enumerate(matrix):
+//         prev = None
+//         for j, cell in enumerate(row):
+//             if cell == 1:
+//                 column = column_headers[j]
+//                 node = Node(row_idx)
+//                 node.column = column
+
+//                 # Link into column
+//                 node.down = column
+//                 node.up = column.up
+//                 column.up.down = node
+//                 column.up = node
+//                 column.size += 1
+
+//                 # Link left-right in row
+//                 if prev is None:
+//                     prev = node
+//                 node.left = prev
+//                 node.right = prev.right
+//                 prev.right.left = node
+//                 prev.right = node
+//                 prev = node
+
+//     return root
+
+// def cover(column):
+//     column.right.left = column.left
+//     column.left.right = column.right
+//     i = column.down
+//     while i != column:
+//         j = i.right
+//         while j != i:
+//             j.down.up = j.up
+//             j.up.down = j.down
+//             j.column.size -= 1
+//             j = j.right
+//         i = i.down
+
+// def uncover(column):
+//     i = column.up
+//     while i != column:
+//         j = i.left
+//         while j != i:
+//             j.column.size += 1
+//             j.down.up = j
+//             j.up.down = j
+//             j = j.left
+//         i = i.up
+//     column.right.left = column
+//     column.left.right = column
+
+// def search(root, solution, results):
+//     if root.right == root:
+//         results.append([node.row_id for node in solution])
+//         return
+
+//     # Choose column with fewest nodes
+//     column = root.right
+//     min_size = column.size
+//     c = column.right
+//     while c != root:
+//         if c.size < min_size:
+//             column = c
+//             min_size = c.size
+//         c = c.right
+
+//     cover(column)
+//     r = column.down
+//     while r != column:
+//         solution.append(r)
+//         j = r.right
+//         while j != r:
+//             cover(j.column)
+//             j = j.right
+//         search(root, solution, results)
+//         r = solution.pop()
+//         column = r.column
+//         j = r.left
+//         while j != r:
+//             uncover(j.column)
+//             j = j.left
+//         r = r.down
+//     uncover(column)
+
+// def solve_exact_cover(matrix):
+//     root = build_dlx_matrix(matrix)
+//     results = []
+//     search(root, [], results)
+//     return results
+
+// if __name__ == "__main__":
+//     # matrix = [
+//     #     [1, 0, 0, 1, 0, 0, 1],
+//     #     [1, 0, 0, 1, 0, 0, 0],
+//     #     [0, 0, 0, 1, 1, 0, 1],
+//     #     [0, 0, 1, 0, 1, 1, 0],
+//     #     [0, 1, 1, 0, 0, 1, 1],
+//     #     [0, 1, 0, 0, 0, 0, 1],
+//     # ]
+//     matrix = [
+//       [1, 0, 0],
+//       [1, 1, 0],
+//       [0, 0, 1]
+//     ]
+//     solutions = solve_exact_cover(matrix)
+//     print(f"Solutions found: {len(solutions)}")
+//     for sol in solutions:
+//         print("Solution rows:", sol)
 
 use std::{
     cell::RefCell,
@@ -176,40 +316,36 @@ impl DancingLinks {
     }
 
     pub fn cover(column: &Link) {
-        // column.right.left = column.left
-        // column.left.right = column.right
-        // i = column.down
-        // while i != column:
-        //     j = i.right
-        //     while j != i:
-        //         j.down.up = j.up
-        //         j.up.down = j.down
-        //         j.column.size -= 1
-        //         j = j.right
-        //     i = i.down
-        let borrowed_column = column.as_ref().unwrap().borrow();
-        let mut column_right = borrowed_column.right.clone().unwrap();
-        let mut column_left = borrowed_column.left.clone().unwrap();
-        column_right.borrow_mut().left = borrowed_column.left.clone();
-        column_left.borrow_mut().right = borrowed_column.right.clone();
+        let column_rc = column.as_ref().unwrap().clone();
+        {
+            let (left, right) = {
+                let col = column_rc.borrow();
+                (   col.left.clone().unwrap(), 
+                    col.right.clone().unwrap()
+                )
+            };
+            right.borrow_mut().left = Some(left.clone());
+            left.borrow_mut().right = Some(right);
+        }
         
-        let mut current_node = borrowed_column.down.clone().unwrap();
-        while !Rc::ptr_eq(&current_node,column.as_ref().unwrap()) {
+        let mut current_node = column_rc.borrow().down.clone().unwrap();
+        while !Rc::ptr_eq(&current_node,&column_rc) {
             let mut current_cell = current_node.borrow().right.clone().unwrap();
             while !Rc::ptr_eq(&current_cell, &current_node) {
-                
-                let next_cell = {
-                    let borrowed_current_cell = current_cell.borrow();
-                    let cell_down = borrowed_current_cell.down.clone().unwrap();
-                    let cell_up = borrowed_current_cell.up.clone().unwrap();
-                    let cell_column = borrowed_current_cell.column.clone().unwrap();
-                    cell_down.borrow_mut().up = Some(cell_up.clone());
-                    cell_up.borrow_mut().down = Some(cell_down.clone());
-                    cell_column.borrow_mut().size -= 1;
-                    borrowed_column.right.clone().unwrap()
+
+                let (up, down, col, next) = {
+                    let cell = current_cell.borrow();
+                    (
+                        cell.up.clone().unwrap(),
+                        cell.down.clone().unwrap(),
+                        cell.column.clone().unwrap(),
+                        cell.right.clone().unwrap()
+                    )
                 };
-                
-                current_cell = next_cell;
+                down.borrow_mut().up = Some(up.clone());
+                up.borrow_mut().down = Some(down.clone());
+                col.borrow_mut().size -= 1;
+                current_cell = next;
             }
             current_node = {
                 // put this in a block otherwise assignment is not possible
@@ -217,7 +353,185 @@ impl DancingLinks {
                 current_node.borrow().down.clone().unwrap()
             };
         }
+    }
 
+    pub fn uncover(column: &Link) {
+        let column_rc = column.as_ref().unwrap().clone();
+        
+        let mut current_node = column_rc.borrow().up.clone().unwrap();
+        while !Rc::ptr_eq(&current_node, &column_rc) {
+            let mut current_cell = current_node.borrow().left.clone().unwrap();
+            while !Rc::ptr_eq(&current_cell, &current_node) {
+                let (up, down, col, next) = {
+                    let cell = current_cell.borrow();
+                    (
+                        cell.up.clone().unwrap(),
+                        cell.down.clone().unwrap(),
+                        cell.column.clone().unwrap(),
+                        cell.left.clone().unwrap()
+                    )
+                };
+                col.borrow_mut().size += 1;
+                down.borrow_mut().up = Some(current_cell.clone());
+                up.borrow_mut().down = Some(current_cell);
+                current_cell = next;
+            }
+            current_node = {
+                current_node.borrow().up.clone().unwrap()
+            };
+        }
+
+        {
+            let (left, right) = {
+                let col = column_rc.borrow();
+                (   col.left.clone().unwrap(), 
+                    col.right.clone().unwrap()
+                )
+            };
+            right.borrow_mut().left = Some(column_rc.clone());
+            left.borrow_mut().right = Some(column_rc);
+        }
+    }
+
+    // pub fn search(&self, solution: &mut Vec<Link>, results: &mut Vec<Vec<usize>>) {
+    //     let root = self.root.as_ref().unwrap();
+    //     if Rc::ptr_eq(&root.borrow().right.as_ref().unwrap(), root) {
+    //         let sol_row_ids: Vec<usize> = solution
+    //         .iter()
+    //         .map(|n| n.as_ref().unwrap().borrow().row_id.unwrap())
+    //         .collect();
+    //         results.push(sol_row_ids);
+    //         return
+    //     }
+    //     let mut column_rc = root.borrow().right.as_ref().unwrap().clone();
+    //     let (mut min_size, mut _col) = {
+    //         let c = column_rc.borrow();
+    //         (c.size, c.right.clone().unwrap())
+    //     };
+    //     while !Rc::ptr_eq(&_col, root) {
+    //         if _col.borrow().size < min_size {
+    //             min_size = _col.borrow().size;
+    //             column_rc = _col.clone();
+    //         }
+    //         _col = { 
+    //             _col.borrow().right.clone().unwrap() 
+    //         };
+    //     }
+    //     Self::cover(&Some(column_rc.clone()));
+    //     let mut row = column_rc.borrow().down.clone().unwrap();
+    //     while !Rc::ptr_eq(&column_rc, root) {
+    //         solution.push(Some(row.clone()));
+    //         let mut cell = row.borrow().right.clone().unwrap();
+    //         while !Rc::ptr_eq(&cell, &row) {
+    //             let (c, r) = {
+    //                 let _c = cell.borrow();
+    //                 (_c.column.clone().unwrap(), _c.right.clone().unwrap())
+    //             };
+    //             Self::cover(&Some(c));
+    //             cell = r;
+    //         }
+    //         self.search(solution, results);
+
+    //         let popped_row = solution.pop().unwrap().unwrap();
+    //         (column_rc, cell) = {
+    //             let r = popped_row.borrow();
+    //             (r.column.clone().unwrap(), r.left.clone().unwrap())
+    //         };
+    //         while !Rc::ptr_eq(&cell, &popped_row) {
+    //             let (c, l) = {
+    //                 let _c = cell.borrow();
+    //                 (_c.column.clone().unwrap(), _c.left.clone().unwrap())
+    //             };
+    //             Self::uncover(&Some(c));
+    //             cell = l;
+    //         }
+            
+    //         row = popped_row.borrow().down.clone().unwrap();
+
+    //     }
+    //     Self::uncover(&Some(column_rc.clone()));        
+    // }
+
+    pub fn search(
+        &self,
+        solution: &mut Vec<Link>,          // current partial solution (stack)
+        results:  &mut Vec<Vec<usize>>,    // all complete solutions
+    ) {
+        let root = self.root.as_ref().unwrap();
+
+        /* ---------- base case: all columns covered ---------- */
+        if Rc::ptr_eq(root.borrow().right.as_ref().unwrap(), root) {
+            let row_ids: Vec<usize> = solution
+                .iter()
+                .map(|n| n.as_ref().unwrap().borrow().row_id.unwrap())
+                .collect();
+            results.push(row_ids);
+            return;
+        }
+
+        /* ---------- choose the column with the fewest nodes ---------- */
+        let mut column = {
+            // start with first column to the right of root
+            let mut best = root.borrow().right.as_ref().unwrap().clone();
+            let mut c    = best.borrow().right.clone().unwrap();
+            while !Rc::ptr_eq(&c, root) {
+                if c.borrow().size < best.borrow().size {
+                    best = c.clone();
+                }
+                c = {
+                    c.borrow().right.clone().unwrap()
+                };
+            }
+            best
+        };
+
+        Self::cover(&Some(column.clone()));
+
+        /* ---------- iterate over each row in that column ---------- */
+        let mut row = column.borrow().down.clone().unwrap();
+        while !Rc::ptr_eq(&row, &column) {
+            // push row onto partial solution
+            solution.push(Some(row.clone()));
+
+            /* cover every other column that has a 1 in this row */
+            {
+                let mut j = row.borrow().right.clone().unwrap();
+                while !Rc::ptr_eq(&j, &row) {
+                    let next = {
+                        let cell_ref = j.borrow();
+                        let col_hdr  = cell_ref.column.clone().unwrap();
+                        Self::cover(&Some(col_hdr));
+                        cell_ref.right.clone().unwrap()
+                    };
+                    j = next;
+                }
+            }
+
+            // recursive descent
+            self.search(solution, results);
+
+            /* ---------- back-track ---------- */
+            let r = solution.pop().unwrap().unwrap(); // the row we just explored
+
+            // Restore columns in reverse order
+            let mut j = r.borrow().left.clone().unwrap();
+            while !Rc::ptr_eq(&j, &r) {
+                let next = {
+                    let cell_ref = j.borrow();
+                    let col_hdr  = cell_ref.column.clone().unwrap();
+                    Self::uncover(&Some(col_hdr));
+                    cell_ref.left.clone().unwrap()
+                };
+                j = next;
+            }
+
+            // advance to the next row *in the same column*
+            row    = r.borrow().down.clone().unwrap();
+            column = r.borrow().column.clone().unwrap(); // keep `column` current
+        }
+
+        // finally uncover the column we originally chose
+        Self::uncover(&Some(column));
     }
 }
 
@@ -446,13 +760,206 @@ mod test {
         assert!(Rc::ptr_eq(root.borrow().left .as_ref().unwrap(), &col1));
         assert!(Rc::ptr_eq(col1.borrow().left .as_ref().unwrap(),  root));
         assert!(Rc::ptr_eq(col1.borrow().right.as_ref().unwrap(),  root));
+    }
 
-        // column-2 is now empty
+    #[test]
+    fn test_uncover_columns() {
+        //   C0 C1 C2
+        // R0 1  0  0
+        // R1 1  1  0
+        // R2 0  0  1
+        let matrix: Vec<Vec<usize>> = vec![
+            vec![1, 0, 0],
+            vec![1, 1, 0],
+            vec![0, 0, 1],
+        ];
+
+        // ───────────────── build structure ──────────────────────────────────
+        let dlx  = DancingLinks::from_matrix(&matrix);
+        let root = dlx.root.as_ref().unwrap();
+        // grab the three column headers (Rc clones so we can keep them)
+        let col0 = root.borrow().right.as_ref().unwrap().clone();
+        let col1 = col0.borrow().right.as_ref().unwrap().clone();
+        let col2 = col1.borrow().right.as_ref().unwrap().clone();
+
+        // ─────────── cover & immediately uncover column-0  ──────────────────
+        DancingLinks::cover(&Some(col0.clone()));
+        DancingLinks::uncover(&Some(col0.clone()));
+        // --------------------------------------------------------------------
+        let borrowed_root = root.borrow();
+        let borrowed_col0 = col0.borrow();
+        let borrowed_col1 = col1.borrow();
+        let borrowed_col2 = col2.borrow();
+
+        // 1️⃣ header ring restored:  root ↔ 0 ↔ 1 ↔ 2 ↔ root
+        assert!(Rc::ptr_eq(borrowed_root.right.as_ref().unwrap(), &col0));
+        assert!(Rc::ptr_eq(borrowed_root.left .as_ref().unwrap(), &col2));
+
+        assert!(Rc::ptr_eq(borrowed_col0.left .as_ref().unwrap(),  &root));
+        assert!(Rc::ptr_eq(borrowed_col0.right.as_ref().unwrap(), &col1));
+
+        assert!(Rc::ptr_eq(borrowed_col1.left .as_ref().unwrap(), &col0));
+        assert!(Rc::ptr_eq(borrowed_col1.right.as_ref().unwrap(), &col2));
+
+        assert!(Rc::ptr_eq(borrowed_col2.left .as_ref().unwrap(), &col1));
+        assert!(Rc::ptr_eq(borrowed_col2.right.as_ref().unwrap(),  &root));
+
+        // 2️⃣ column sizes back to original
+        assert_eq!(borrowed_col0.size, 2); // rows 0 & 1
+        assert_eq!(borrowed_col1.size, 1); // row 1
+        assert_eq!(borrowed_col2.size, 1); // row 2
+
+        // 3️⃣ column-0 vertical list again holds rows 0 & 1, in order
+        let c0_r0 = borrowed_col0.down.as_ref().unwrap();
+        let borrowed_c0_r0 = c0_r0.borrow();
+        assert_eq!(c0_r0.borrow().row_id, Some(0));
+        let c0_r1 = borrowed_c0_r0.down.as_ref().unwrap();
+        let borrowed_c0_r1 = c0_r1.borrow();
+        assert_eq!(c0_r1.borrow().row_id, Some(1));
+        assert!(Rc::ptr_eq(borrowed_c0_r1.down.as_ref().unwrap(), &col0)); // circular
+        assert!(Rc::ptr_eq(borrowed_col0.up.as_ref().unwrap(),    c0_r1)); // circular
+
+        // 4️⃣ column-1 once again owns only row-1
+        let c1_r1 = borrowed_col1.down.as_ref().unwrap();
+        let borrowed_c1_r1 = c1_r1.borrow();
+        assert_eq!(borrowed_c1_r1.row_id, Some(1));
+        assert!(Rc::ptr_eq(borrowed_c1_r1.down.as_ref().unwrap(), &col1));
+        assert!(Rc::ptr_eq(borrowed_col1.up.as_ref().unwrap(),    c1_r1));
+
+        // 5️⃣ column-2 once again owns only row-2
+        let c2_r2 = borrowed_col2.down.as_ref().unwrap();
+        let borrowed_c2_r2 = c2_r2.borrow();
+        assert_eq!(borrowed_c2_r2.row_id, Some(2));
+        assert!(Rc::ptr_eq(borrowed_c2_r2.down.as_ref().unwrap(), &col2));
+        assert!(Rc::ptr_eq(borrowed_col2.up.as_ref().unwrap(),    c2_r2));
+
+        // 6️⃣ check a row link we know changed during cover/uncover:
+        //     row-0 is back to a single self-looping node.
+        assert!(Rc::ptr_eq(
+            borrowed_c0_r0.left.as_ref().unwrap(),
+            c0_r0
+        ));
+        assert!(Rc::ptr_eq(
+            borrowed_c0_r0.right.as_ref().unwrap(),
+            c0_r0
+        ));
+    }
+
+    #[test]
+    fn test_cover0_cover1_uncover1() {
+        //   C0 C1 C2
+        // R0 1  0  0
+        // R1 1  1  0
+        // R2 0  0  1
+        let matrix: Vec<Vec<usize>> = vec![
+            vec![1, 0, 0],
+            vec![1, 1, 0],
+            vec![0, 0, 1],
+        ];
+
+        // ───────── build DLX ───────────────────────────────────────────────
+        let dlx  = DancingLinks::from_matrix(&matrix);
+        let root = dlx.root.as_ref().unwrap();
+
+        let col0 = root.borrow().right.as_ref().unwrap().clone();
+        let col1 = col0.borrow().right.as_ref().unwrap().clone();
+        let col2 = col1.borrow().right.as_ref().unwrap().clone();
+
+        // ───────── sequence: cover C0 → cover C1 → uncover C1 ──────────────
+        DancingLinks::cover(&Some(col0.clone()));
+        DancingLinks::cover(&Some(col1.clone()));
+        DancingLinks::uncover(&Some(col1.clone()));
+        // ------------------------------------------------------------------
+
+        // == HEADER RING should now be  root ↔ C1 ↔ C2 ↔ root ===============
+        assert!(Rc::ptr_eq(root.borrow().right.as_ref().unwrap(), &col1));
+        assert!(Rc::ptr_eq(root.borrow().left .as_ref().unwrap(), &col2));
+
+        assert!(Rc::ptr_eq(col1.borrow().left .as_ref().unwrap(),  root));
+        assert!(Rc::ptr_eq(col1.borrow().right.as_ref().unwrap(), &col2));
+
+        assert!(Rc::ptr_eq(col2.borrow().left .as_ref().unwrap(), &col1));
+        assert!(Rc::ptr_eq(col2.borrow().right.as_ref().unwrap(),  root));
+
+        // == COLUMN STATES ==================================================
+        // C0 is still covered (detached horizontally)
+        assert!(!Rc::ptr_eq(root.borrow().right.as_ref().unwrap(), &col0));
+        // C1 is empty: size 0, vertical list points to itself
+        {
+            let c1 = col1.borrow();
+            assert_eq!(c1.size, 0);
+            assert!(Rc::ptr_eq(c1.down.as_ref().unwrap(), &col1));
+            assert!(Rc::ptr_eq(c1.up  .as_ref().unwrap(), &col1));
+        }
+        // C2 still holds its single row-2 node
         {
             let c2 = col2.borrow();
-            assert_eq!(c2.size, 0);
-            assert!(Rc::ptr_eq(c2.down.as_ref().unwrap(), &col2));
-            assert!(Rc::ptr_eq(c2.up  .as_ref().unwrap(), &col2));
+            assert_eq!(c2.size, 1);
+            let r2 = c2.down.as_ref().unwrap();
+            assert_eq!(r2.borrow().row_id, Some(2));
+            assert!(Rc::ptr_eq(r2.borrow().left.as_ref().unwrap(),  r2));
+            assert!(Rc::ptr_eq(r2.borrow().right.as_ref().unwrap(), r2));
         }
+    }
+
+    #[test]
+    fn test_search_finds_r1_r2() {
+        //   C0 C1 C2
+        // R0 1  0  0
+        // R1 1  1  0
+        // R2 0  0  1
+        let matrix: Vec<Vec<usize>> = vec![
+            vec![1, 0, 0],
+            vec![1, 1, 0],
+            vec![0, 0, 1],
+        ];
+
+        // Build DLX structure
+        let dlx = DancingLinks::from_matrix(&matrix);
+
+        // Run Algorithm X
+        let mut solution: Vec<Link>       = Vec::new(); // working stack
+        let mut results : Vec<Vec<usize>> = Vec::new(); // all solutions
+        dlx.search(&mut solution, &mut results);
+
+        // There is exactly one solution …
+        assert_eq!(results.len(), 1);
+
+        // … and it must be rows {1, 2} (order independent)
+        let mut sol = results[0].clone();
+        sol.sort_unstable();
+        assert_eq!(sol, vec![1, 2]);
+    }
+
+    #[test]
+    fn test_matrix_6x7_solution_135() {
+        // Matrix rows are numbered 0-5
+        //   C0 C1 C2 C3 C4 C5 C6
+        let matrix: Vec<Vec<usize>> = vec![
+            vec![1, 0, 0, 1, 0, 0, 1], // 0
+            vec![1, 0, 0, 1, 0, 0, 0], // 1  ← want this
+            vec![0, 0, 0, 1, 1, 0, 1], // 2
+            vec![0, 0, 1, 0, 1, 1, 0], // 3  ← want this
+            vec![0, 1, 1, 0, 0, 1, 1], // 4
+            vec![0, 1, 0, 0, 0, 0, 1], // 5  ← want this
+        ];
+
+        // Build Dancing Links structure
+        let dlx = DancingLinks::from_matrix(&matrix);
+
+        // Run Algorithm X
+        let mut partial  : Vec<Link>       = Vec::new();
+        let mut solutions: Vec<Vec<usize>> = Vec::new();
+        dlx.search(&mut partial, &mut solutions);
+
+        // There must be at least one solution that is exactly [1, 3, 5]
+        let target = vec![1, 3, 5];
+        let found = solutions.iter().any(|sol| {
+            let mut s = sol.clone();
+            s.sort_unstable();
+            s == target
+        });
+
+        assert!(found, "expected solution [1,3,5] not found");
     }
 }
