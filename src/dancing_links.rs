@@ -393,65 +393,6 @@ impl DancingLinks {
         }
     }
 
-    // pub fn search(&self, solution: &mut Vec<Link>, results: &mut Vec<Vec<usize>>) {
-    //     let root = self.root.as_ref().unwrap();
-    //     if Rc::ptr_eq(&root.borrow().right.as_ref().unwrap(), root) {
-    //         let sol_row_ids: Vec<usize> = solution
-    //         .iter()
-    //         .map(|n| n.as_ref().unwrap().borrow().row_id.unwrap())
-    //         .collect();
-    //         results.push(sol_row_ids);
-    //         return
-    //     }
-    //     let mut column_rc = root.borrow().right.as_ref().unwrap().clone();
-    //     let (mut min_size, mut _col) = {
-    //         let c = column_rc.borrow();
-    //         (c.size, c.right.clone().unwrap())
-    //     };
-    //     while !Rc::ptr_eq(&_col, root) {
-    //         if _col.borrow().size < min_size {
-    //             min_size = _col.borrow().size;
-    //             column_rc = _col.clone();
-    //         }
-    //         _col = { 
-    //             _col.borrow().right.clone().unwrap() 
-    //         };
-    //     }
-    //     Self::cover(&Some(column_rc.clone()));
-    //     let mut row = column_rc.borrow().down.clone().unwrap();
-    //     while !Rc::ptr_eq(&column_rc, root) {
-    //         solution.push(Some(row.clone()));
-    //         let mut cell = row.borrow().right.clone().unwrap();
-    //         while !Rc::ptr_eq(&cell, &row) {
-    //             let (c, r) = {
-    //                 let _c = cell.borrow();
-    //                 (_c.column.clone().unwrap(), _c.right.clone().unwrap())
-    //             };
-    //             Self::cover(&Some(c));
-    //             cell = r;
-    //         }
-    //         self.search(solution, results);
-
-    //         let popped_row = solution.pop().unwrap().unwrap();
-    //         (column_rc, cell) = {
-    //             let r = popped_row.borrow();
-    //             (r.column.clone().unwrap(), r.left.clone().unwrap())
-    //         };
-    //         while !Rc::ptr_eq(&cell, &popped_row) {
-    //             let (c, l) = {
-    //                 let _c = cell.borrow();
-    //                 (_c.column.clone().unwrap(), _c.left.clone().unwrap())
-    //             };
-    //             Self::uncover(&Some(c));
-    //             cell = l;
-    //         }
-            
-    //         row = popped_row.borrow().down.clone().unwrap();
-
-    //     }
-    //     Self::uncover(&Some(column_rc.clone()));        
-    // }
-
     pub fn search(
         &self,
         solution: &mut Vec<Link>,          // current partial solution (stack)
