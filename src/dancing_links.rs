@@ -476,6 +476,138 @@ impl DancingLinks {
     }
 }
 
+struct SudokuSolver {
+    matrix: Vec<[u8; Self::NO_COLUMNS]>,
+    row_map: Vec<(u8, u8, u8)>
+}
+
+impl SudokuSolver {
+    const GRID_SIZE: usize = 9;
+    const NO_COLUMNS: usize = 4 * 9 * 9;
+    const NO_ROWS: usize = 9 * 9 * 9;
+
+    fn build_row(row_no: usize, col_no: usize, digit: usize) -> [u8; 324] {
+        let grid_size = Self::GRID_SIZE;
+        let mut row: [u8; Self::NO_COLUMNS] = [0; Self::NO_COLUMNS];
+
+        // set row column constraint eg. R1C1, R1C2, etc
+        row[grid_size * row_no + col_no] = 1;
+        // set row constraint eg. R1#1, R1#2, etc
+        row[ grid_size.pow(2) + grid_size * row_no + (digit - 1)] = 1;
+        // set column constraint eg. C1#1, C1#2, etc
+        row[2 * grid_size.pow(2) + grid_size * col_no + (digit - 1)] = 1;
+        // set box constraint eg. B1#1, B1#1, etc
+        let _box_no = (row_no / 3) * 3 + ( col_no / 3);
+        row[3 * grid_size.pow(2) + grid_size * _box_no + (digit - 1)] = 1;
+
+        row
+    }
+
+    pub fn from_grid_to_exact_cover(sudoku_grid: &Vec<Vec<u8>>) -> Self {
+        let mut matrix: Vec<[u8; Self::NO_COLUMNS]> = Vec::with_capacity(Self::NO_ROWS);
+        let mut row_map: Vec<(u8, u8, u8)> = Vec::with_capacity(Self::NO_ROWS);
+        for row_no in 0..9 {
+            for col_no in 0..9 {
+                if sudoku_grid[row_no][col_no] !=0 {
+                    let digit = sudoku_grid[row_no][col_no] as usize;
+                    matrix.push(
+                        Self::build_row(row_no, col_no, digit)
+                    );
+                    row_map.push((row_no as u8, col_no  as u8, digit  as u8));
+                }
+                else {
+                    for d in 1..10 {
+                        let digit = d as usize;
+                        matrix.push(
+                            Self::build_row(row_no, col_no, digit)
+                        );
+                        row_map.push((row_no as u8, col_no  as u8, digit  as u8));
+                    }
+                }
+            }
+        }
+        SudokuSolver {
+            matrix,
+            row_map
+        }
+    }
+
+    pub fn solve(&self) -> Option<Vec<[u8; Self::GRID_SIZE]>> {
+        let vec_matrix: Vec<Vec<usize>> = self.matrix
+            .iter()                           
+            .map(|row| {
+                row.iter()                     
+                   .map(|&v| v as usize)
+                   .collect()
+            })
+            .collect();
+        let dlx = DancingLinks::from_matrix(&vec_matrix);
+        let mut solution: Vec<Link>       = Vec::new();
+        let mut results : Vec<Vec<usize>> = Vec::new();
+        dlx.search(&mut solution, &mut results);
+        
+        if results.is_empty() {
+             return None;
+        }
+        
+        let sol = &results[0];
+        let mut grid = vec![[0u8; Self::GRID_SIZE]; Self::GRID_SIZE];
+        for &row_idx in sol {
+            let &(row_no, col_no, digit) = &self.row_map[row_idx];
+            grid[row_no as usize][col_no as usize] = digit;
+        }
+        Some(grid)
+    }
+
+    pub fn  pretty_print_grid(grid: &Vec<Vec<u8>>) {
+        println!("problem:");
+        for (row_no, row) in grid.iter().enumerate() {
+            if row_no % 3 == 0 {
+                println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+            }
+            else {
+                println!("{}", "-".repeat(Self::GRID_SIZE * 4 + 5));
+            }
+            print!("|");
+            for (col_no, &cell) in row.iter().enumerate() {
+                if col_no % 3 == 0 {
+                    print!("|");
+                }
+                if cell == 0 {
+                    print!(" {} |", " ");
+                }
+                else {
+                    print!(" {} |", cell);
+                }
+            }
+            println!("|");
+        }
+        println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+    }
+
+    pub  fn pretty_print_solution(grid: &Vec<[u8; Self::GRID_SIZE]>) {
+        println!("solution:");
+        for (row_no, row) in grid.iter().enumerate() {
+            if row_no % 3 == 0 {
+                println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+            }
+            else {
+                println!("{}", "-".repeat(Self::GRID_SIZE * 4 + 5));
+            }
+            print!("|");
+            for (col_no, &cell) in row.iter().enumerate() {
+                if col_no % 3 == 0 {
+                    print!("|");
+                }
+                print!(" {} |", cell);
+            }
+            println!("|");
+        }
+        println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+    }
+    
+}
+
 
 #[cfg(test)]
 mod test {
@@ -902,5 +1034,28 @@ mod test {
         });
 
         assert!(found, "expected solution [1,3,5] not found");
+    }
+
+    #[test]
+    fn test_sudo_solver() {
+        let sudoku_grid: Vec<Vec<u8>> = vec![
+            vec![5,3,0, 0,7,0, 0,0,0],
+            vec![6,0,0, 1,9,5, 0,0,0],
+            vec![0,9,8, 0,0,0, 0,6,0],
+
+            vec![8,0,0, 0,6,0, 0,0,3],
+            vec![4,0,0, 8,0,3, 0,0,1],
+            vec![7,0,0, 0,2,0, 0,0,6],
+
+            vec![0,6,0, 0,0,0, 2,8,0],
+            vec![0,0,0, 4,1,9, 0,0,5],
+            vec![0,0,0, 0,8,0, 0,7,9],
+        ];
+        let sudoku_solver = SudokuSolver::from_grid_to_exact_cover(&sudoku_grid);
+        let solution = sudoku_solver.solve();
+        SudokuSolver::pretty_print_grid(&sudoku_grid);
+        if let Some(sol) = solution {
+            SudokuSolver::pretty_print_solution(&sol);
+        }
     }
 }
