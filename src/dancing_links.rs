@@ -1,144 +1,3 @@
-// Python code for dancing links
-// class Node:
-//     def __init__(self, row_id=None):
-//         self.left = self
-//         self.right = self
-//         self.up = self
-//         self.down = self
-//         self.column = None
-//         self.row_id = row_id  # Added to track real row indices
-
-// class ColumnNode(Node):
-//     def __init__(self, name):
-//         super().__init__()
-//         self.name = name
-//         self.size = 0
-//         self.column = self
-
-// def build_dlx_matrix(matrix):
-//     root = ColumnNode("root")
-//     column_headers = []
-
-//     # Create column headers and link them left-right
-//     for i in range(len(matrix[0])):
-//         column = ColumnNode(str(i))
-//         column_headers.append(column)
-//         column.right = root
-//         column.left = root.left
-//         root.left.right = column
-//         root.left = column
-
-//     # Create nodes
-//     for row_idx, row in enumerate(matrix):
-//         prev = None
-//         for j, cell in enumerate(row):
-//             if cell == 1:
-//                 column = column_headers[j]
-//                 node = Node(row_idx)
-//                 node.column = column
-
-//                 # Link into column
-//                 node.down = column
-//                 node.up = column.up
-//                 column.up.down = node
-//                 column.up = node
-//                 column.size += 1
-
-//                 # Link left-right in row
-//                 if prev is None:
-//                     prev = node
-//                 node.left = prev
-//                 node.right = prev.right
-//                 prev.right.left = node
-//                 prev.right = node
-//                 prev = node
-
-//     return root
-
-// def cover(column):
-//     column.right.left = column.left
-//     column.left.right = column.right
-//     i = column.down
-//     while i != column:
-//         j = i.right
-//         while j != i:
-//             j.down.up = j.up
-//             j.up.down = j.down
-//             j.column.size -= 1
-//             j = j.right
-//         i = i.down
-
-// def uncover(column):
-//     i = column.up
-//     while i != column:
-//         j = i.left
-//         while j != i:
-//             j.column.size += 1
-//             j.down.up = j
-//             j.up.down = j
-//             j = j.left
-//         i = i.up
-//     column.right.left = column
-//     column.left.right = column
-
-// def search(root, solution, results):
-//     if root.right == root:
-//         results.append([node.row_id for node in solution])
-//         return
-
-//     # Choose column with fewest nodes
-//     column = root.right
-//     min_size = column.size
-//     c = column.right
-//     while c != root:
-//         if c.size < min_size:
-//             column = c
-//             min_size = c.size
-//         c = c.right
-
-//     cover(column)
-//     r = column.down
-//     while r != column:
-//         solution.append(r)
-//         j = r.right
-//         while j != r:
-//             cover(j.column)
-//             j = j.right
-//         search(root, solution, results)
-//         r = solution.pop()
-//         column = r.column
-//         j = r.left
-//         while j != r:
-//             uncover(j.column)
-//             j = j.left
-//         r = r.down
-//     uncover(column)
-
-// def solve_exact_cover(matrix):
-//     root = build_dlx_matrix(matrix)
-//     results = []
-//     search(root, [], results)
-//     return results
-
-// if __name__ == "__main__":
-//     # matrix = [
-//     #     [1, 0, 0, 1, 0, 0, 1],
-//     #     [1, 0, 0, 1, 0, 0, 0],
-//     #     [0, 0, 0, 1, 1, 0, 1],
-//     #     [0, 0, 1, 0, 1, 1, 0],
-//     #     [0, 1, 1, 0, 0, 1, 1],
-//     #     [0, 1, 0, 0, 0, 0, 1],
-//     # ]
-//     matrix = [
-//       [1, 0, 0],
-//       [1, 1, 0],
-//       [0, 0, 1]
-//     ]
-//     solutions = solve_exact_cover(matrix)
-//     print(f"Solutions found: {len(solutions)}")
-//     for sol in solutions:
-//         print("Solution rows:", sol)
-
 use std::{
     cell::RefCell,
     rc::Rc
@@ -1059,3 +918,145 @@ mod test {
         }
     }
 }
+
+
+// Python code for dancing links
+// class Node:
+//     def __init__(self, row_id=None):
+//         self.left = self
+//         self.right = self
+//         self.up = self
+//         self.down = self
+//         self.column = None
+//         self.row_id = row_id  # Added to track real row indices
+
+// class ColumnNode(Node):
+//     def __init__(self, name):
+//         super().__init__()
+//         self.name = name
+//         self.size = 0
+//         self.column = self
+
+// def build_dlx_matrix(matrix):
+//     root = ColumnNode("root")
+//     column_headers = []
+
+//     # Create column headers and link them left-right
+//     for i in range(len(matrix[0])):
+//         column = ColumnNode(str(i))
+//         column_headers.append(column)
+//         column.right = root
+//         column.left = root.left
+//         root.left.right = column
+//         root.left = column
+
+//     # Create nodes
+//     for row_idx, row in enumerate(matrix):
+//         prev = None
+//         for j, cell in enumerate(row):
+//             if cell == 1:
+//                 column = column_headers[j]
+//                 node = Node(row_idx)
+//                 node.column = column
+
+//                 # Link into column
+//                 node.down = column
+//                 node.up = column.up
+//                 column.up.down = node
+//                 column.up = node
+//                 column.size += 1
+
+//                 # Link left-right in row
+//                 if prev is None:
+//                     prev = node
+//                 node.left = prev
+//                 node.right = prev.right
+//                 prev.right.left = node
+//                 prev.right = node
+//                 prev = node
+
+//     return root
+
+// def cover(column):
+//     column.right.left = column.left
+//     column.left.right = column.right
+//     i = column.down
+//     while i != column:
+//         j = i.right
+//         while j != i:
+//             j.down.up = j.up
+//             j.up.down = j.down
+//             j.column.size -= 1
+//             j = j.right
+//         i = i.down
+
+// def uncover(column):
+//     i = column.up
+//     while i != column:
+//         j = i.left
+//         while j != i:
+//             j.column.size += 1
+//             j.down.up = j
+//             j.up.down = j
+//             j = j.left
+//         i = i.up
+//     column.right.left = column
+//     column.left.right = column
+
+// def search(root, solution, results):
+//     if root.right == root:
+//         results.append([node.row_id for node in solution])
+//         return
+
+//     # Choose column with fewest nodes
+//     column = root.right
+//     min_size = column.size
+//     c = column.right
+//     while c != root:
+//         if c.size < min_size:
+//             column = c
+//             min_size = c.size
+//         c = c.right
+
+//     cover(column)
+//     r = column.down
+//     while r != column:
+//         solution.append(r)
+//         j = r.right
+//         while j != r:
+//             cover(j.column)
+//             j = j.right
+//         search(root, solution, results)
+//         r = solution.pop()
+//         column = r.column
+//         j = r.left
+//         while j != r:
+//             uncover(j.column)
+//             j = j.left
+//         r = r.down
+//     uncover(column)
+
+// def solve_exact_cover(matrix):
+//     root = build_dlx_matrix(matrix)
+//     results = []
+//     search(root, [], results)
+//     return results
+
+// if __name__ == "__main__":
+//     # matrix = [
+//     #     [1, 0, 0, 1, 0, 0, 1],
+//     #     [1, 0, 0, 1, 0, 0, 0],
+//     #     [0, 0, 0, 1, 1, 0, 1],
+//     #     [0, 0, 1, 0, 1, 1, 0],
+//     #     [0, 1, 1, 0, 0, 1, 1],
+//     #     [0, 1, 0, 0, 0, 0, 1],
+//     # ]
+//     matrix = [
+//       [1, 0, 0],
+//       [1, 1, 0],
+//       [0, 0, 1]
+//     ]
+//     solutions = solve_exact_cover(matrix)
+//     print(f"Solutions found: {len(solutions)}")
+//     for sol in solutions:
+//         print("Solution rows:", sol)
