@@ -327,7 +327,6 @@ impl DancingLinks {
 
             // advance to the next row *in the same column*
             row    = r.borrow().down.clone().unwrap();
-            column = r.borrow().column.clone().unwrap(); // keep `column` current
         }
 
         // finally uncover the column we originally chose
@@ -909,6 +908,29 @@ mod test {
             vec![0,6,0, 0,0,0, 2,8,0],
             vec![0,0,0, 4,1,9, 0,0,5],
             vec![0,0,0, 0,8,0, 0,7,9],
+        ];
+        let sudoku_solver = SudokuSolver::from_grid_to_exact_cover(&sudoku_grid);
+        let solution = sudoku_solver.solve();
+        SudokuSolver::pretty_print_grid(&sudoku_grid);
+        if let Some(sol) = solution {
+            SudokuSolver::pretty_print_solution(&sol);
+        }
+    }
+
+    #[test]
+    fn test_sudo_solver_for_extreme_difficulty() {
+        let sudoku_grid: Vec<Vec<u8>> = vec![
+            vec![0,0,0, 0,0,0, 0,0,0],
+            vec![0,3,0, 5,0,0, 0,6,0],
+            vec![0,0,2, 0,8,0, 0,4,0],
+
+            vec![0,5,0, 0,6,0, 0,8,0],
+            vec![0,1,0, 0,7,0, 0,0,0],
+            vec![3,0,0, 0,2,0, 6,7,0],
+
+            vec![0,0,0, 0,0,0, 1,0,7],
+            vec![1,0,0, 8,0,0, 0,0,4],
+            vec![0,4,0, 9,0,0, 0,3,0],
         ];
         let sudoku_solver = SudokuSolver::from_grid_to_exact_cover(&sudoku_grid);
         let solution = sudoku_solver.solve();
