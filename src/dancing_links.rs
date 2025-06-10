@@ -5,9 +5,8 @@ use std::{
 
 type Link = Option<Rc<RefCell<Node>>>;
 
-struct Node {
+pub struct Node {
     row_id: Option<usize>,
-    name: Option<String>,
     size: usize,
     column: Link,
     left: Link,
@@ -27,7 +26,6 @@ impl Node {
     pub fn new_node(row_id: usize) -> Rc<RefCell<Self>> {
         let node = Rc::new(RefCell::new(Node {
             row_id: Some(row_id),
-            name: None,
             size: 0,
             column: None,
             left: None,
@@ -47,10 +45,9 @@ impl Node {
         node
     }
 
-    pub fn new_column_node(name: String) -> Rc<RefCell<Self>> {
+    pub fn new_column_node() -> Rc<RefCell<Self>> {
         let col_node = Rc::new(RefCell::new(Node {
             row_id: None,
-            name: Some(name),
             size: 0,
             column: None,
             left: None,
@@ -77,15 +74,15 @@ impl DancingLinks {
 
     pub fn from_matrix(matrix: &Vec<Vec<usize>>) -> Self {
         let dlx = DancingLinks {
-            root: Some(Node::new_column_node("root".to_string()))
+            root: Some(Node::new_column_node())
         };
         let no_columns = matrix[0].len();
         let mut column_headers: Vec<Link> = Vec::with_capacity(no_columns);
         let root = dlx.root.as_ref().unwrap();
         
         // create column headers and link them
-        for i in 0..no_columns {
-            let column_node = Node::new_column_node(format!("{i}"));
+        for _ in 0..no_columns {
+            let column_node = Node::new_column_node();
             let previous_node = root.borrow().left.clone().unwrap();
             // create a new block so that column_node can be mutated and we can have a immutable reference to it outside the block.
             {
@@ -174,7 +171,7 @@ impl DancingLinks {
         dlx
     }
 
-    pub fn cover(column: &Link) {
+    fn cover(column: &Link) {
         let column_rc = column.as_ref().unwrap().clone();
         {
             let (left, right) = {
@@ -214,7 +211,7 @@ impl DancingLinks {
         }
     }
 
-    pub fn uncover(column: &Link) {
+    fn uncover(column: &Link) {
         let column_rc = column.as_ref().unwrap().clone();
         
         let mut current_node = column_rc.borrow().up.clone().unwrap();
@@ -270,7 +267,7 @@ impl DancingLinks {
         }
 
         /* ---------- choose the column with the fewest nodes ---------- */
-        let mut column = {
+        let column = {
             // start with first column to the right of root
             let mut best = root.borrow().right.as_ref().unwrap().clone();
             let mut c    = best.borrow().right.clone().unwrap();
@@ -334,6 +331,7 @@ impl DancingLinks {
     }
 }
 
+#[allow(dead_code)]
 struct SudokuSolver {
     matrix: Vec<[u8; Self::NO_COLUMNS]>,
     row_map: Vec<(u8, u8, u8)>
@@ -344,6 +342,7 @@ impl SudokuSolver {
     const NO_COLUMNS: usize = 4 * 9 * 9;
     const NO_ROWS: usize = 9 * 9 * 9;
 
+    #[allow(dead_code)]
     fn build_row(row_no: usize, col_no: usize, digit: usize) -> [u8; 324] {
         let grid_size = Self::GRID_SIZE;
         let mut row: [u8; Self::NO_COLUMNS] = [0; Self::NO_COLUMNS];
@@ -361,7 +360,8 @@ impl SudokuSolver {
         row
     }
 
-    pub fn from_grid_to_exact_cover(sudoku_grid: &Vec<Vec<u8>>) -> Self {
+    #[allow(dead_code)]
+    fn from_grid_to_exact_cover(sudoku_grid: &Vec<Vec<u8>>) -> Self {
         let mut matrix: Vec<[u8; Self::NO_COLUMNS]> = Vec::with_capacity(Self::NO_ROWS);
         let mut row_map: Vec<(u8, u8, u8)> = Vec::with_capacity(Self::NO_ROWS);
         for row_no in 0..9 {
@@ -390,7 +390,8 @@ impl SudokuSolver {
         }
     }
 
-    pub fn solve(&self) -> Option<Vec<[u8; Self::GRID_SIZE]>> {
+    #[allow(dead_code)]
+    fn solve(&self) -> Option<Vec<[u8; Self::GRID_SIZE]>> {
         let vec_matrix: Vec<Vec<usize>> = self.matrix
             .iter()                           
             .map(|row| {
@@ -417,7 +418,8 @@ impl SudokuSolver {
         Some(grid)
     }
 
-    pub fn  pretty_print_grid(grid: &Vec<Vec<u8>>) {
+    #[allow(dead_code)]
+    fn  pretty_print_grid(grid: &Vec<Vec<u8>>) {
         println!("problem:");
         for (row_no, row) in grid.iter().enumerate() {
             if row_no % 3 == 0 {
@@ -443,7 +445,8 @@ impl SudokuSolver {
         println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
     }
 
-    pub  fn pretty_print_solution(grid: &Vec<[u8; Self::GRID_SIZE]>) {
+    #[allow(dead_code)]
+    fn pretty_print_solution(grid: &Vec<[u8; Self::GRID_SIZE]>) {
         println!("solution:");
         for (row_no, row) in grid.iter().enumerate() {
             if row_no % 3 == 0 {
@@ -477,7 +480,6 @@ mod test {
         let node = Node::new_node(1);
         let borrowed_node = node.borrow();
         assert_eq!(borrowed_node.row_id, Some(1));
-        assert!(borrowed_node.name.is_none());
         assert_eq!(borrowed_node.size, 0);
         assert!(Rc::ptr_eq(
             &node,
@@ -500,9 +502,8 @@ mod test {
 
     #[test]
     fn test_new_col_node() {
-        let node = Node::new_column_node("a".to_string());
+        let node = Node::new_column_node();
         let borrowed_node = node.borrow();
-        assert_eq!(borrowed_node.name, Some("a".to_string()));
         assert!(borrowed_node.row_id.is_none());
         assert_eq!(borrowed_node.size, 0);
         assert!(Rc::ptr_eq(
@@ -548,10 +549,6 @@ mod test {
         let col2 = borrowed_col1.right.as_ref().unwrap();
         let borrowed_col2 = col2.borrow();
 
-        assert_eq!(borrowed_root.name.as_deref(),  Some("root"));
-        assert_eq!(borrowed_col0.name.as_deref(),  Some("0"));
-        assert_eq!(borrowed_col1.name.as_deref(),  Some("1"));
-        assert_eq!(borrowed_col2.name.as_deref(),  Some("2"));
 
         assert!(Rc::ptr_eq(root,  borrowed_col2.right.as_ref().unwrap()));
         assert!(Rc::ptr_eq(root,  borrowed_col0.left.as_ref().unwrap()));

@@ -1,7 +1,7 @@
 use std::ptr;
 
 #[derive(Debug)]
-struct Node {
+pub struct Node {
     row_id: usize,
     size: usize,
     column: *mut Node,
@@ -37,8 +37,8 @@ impl Node {
 
 pub struct EfficientDancingLinks {
     root: Box<Node>,
-    column_headers: Vec<Box<Node>>,
-    rows: Vec<Box<Node>>,
+    _column_headers: Vec<Box<Node>>,
+    _rows: Vec<Box<Node>>,
 }
 
 
@@ -96,8 +96,8 @@ impl EfficientDancingLinks {
         }
         Box::new(EfficientDancingLinks {
             root,
-            column_headers,
-            rows: rows_vec
+            _column_headers: column_headers,
+            _rows: rows_vec
         })
     }
 
@@ -137,7 +137,7 @@ impl EfficientDancingLinks {
         }
     }
 
-    fn search(
+    pub fn search(
         &self,
         solution: &mut Vec<*mut Node>,
         results:  &mut Vec<Vec<usize>>
@@ -154,7 +154,7 @@ impl EfficientDancingLinks {
                 return;
             }
 
-            let mut column_ptr = {
+            let column_ptr = {
                 let mut best_col = (*root_ptr).right;
                 let mut min_size = (*best_col).size;
                 let mut col = (*best_col).right;
@@ -227,11 +227,11 @@ mod test {
 
         // pointers to root and columns
         let root_ptr: *mut Node = &mut *dlx.root;
-        let col0_ptr: *mut Node = &mut *dlx.column_headers[0];
-        let col1_ptr: *mut Node = &mut *dlx.column_headers[1];
+        let col0_ptr: *mut Node = &mut *dlx._column_headers[0];
+        let col1_ptr: *mut Node = &mut *dlx._column_headers[1];
 
         // 1) we should have exactly 2 column headers
-        assert_eq!(dlx.column_headers.len(), 2);
+        assert_eq!(dlx._column_headers.len(), 2);
 
         unsafe {
             // 2) root ↔ columns circular linkage:
@@ -250,10 +250,10 @@ mod test {
         }
 
         // 4) we should have created exactly two row‐nodes
-        assert_eq!(dlx.rows.len(), 2);
+        assert_eq!(dlx._rows.len(), 2);
 
         // 5) verify each row‐node links back into the correct column
-        for (i, row_node_box) in dlx.rows.iter().enumerate() {
+        for (i, row_node_box) in dlx._rows.iter().enumerate() {
             // row 0 → column 0, row 1 → column 1
             let expected_col = if i == 0 { col0_ptr } else { col1_ptr };
             let n_ptr = &**row_node_box as *const Node as *mut Node;
@@ -293,12 +293,12 @@ mod test {
 
         // pointers to root and columns
         let root_ptr: *mut Node = &mut *dlx.root;
-        let col0_ptr: *mut Node = &mut *dlx.column_headers[0];
-        let col1_ptr: *mut Node = &mut *dlx.column_headers[1];
-        let col2_ptr: *mut Node = &mut *dlx.column_headers[2];
+        let col0_ptr: *mut Node = &mut *dlx._column_headers[0];
+        let col1_ptr: *mut Node = &mut *dlx._column_headers[1];
+        let col2_ptr: *mut Node = &mut *dlx._column_headers[2];
 
         // 1) three column headers
-        assert_eq!(dlx.column_headers.len(), 3);
+        assert_eq!(dlx._column_headers.len(), 3);
 
         unsafe {
             // 2) root ↔ columns circular linkage:
@@ -320,11 +320,11 @@ mod test {
         }
 
         // 4) exactly three row‐nodes created
-        assert_eq!(dlx.rows.len(), 3);
+        assert_eq!(dlx._rows.len(), 3);
 
         // 5) each row‐node is in its own 1‐element horizontal circle
         //    and linked vertically under the correct column
-        for (i, row_node_box) in dlx.rows.iter().enumerate() {
+        for (i, row_node_box) in dlx._rows.iter().enumerate() {
             // expected column for row i
             let expected_col = match i {
                 0 => col0_ptr,
@@ -368,9 +368,9 @@ mod test {
 
         // raw pointers to root and each column header
         let root_ptr: *mut Node = &mut *dlx.root;
-        let col0_ptr: *mut Node = &mut *dlx.column_headers[0];
-        let col1_ptr: *mut Node = &mut *dlx.column_headers[1];
-        let col2_ptr: *mut Node = &mut *dlx.column_headers[2];
+        let col0_ptr: *mut Node = &mut *dlx._column_headers[0];
+        let col1_ptr: *mut Node = &mut *dlx._column_headers[1];
+        let col2_ptr: *mut Node = &mut *dlx._column_headers[2];
 
         // 1) capture initial state
         let (init_rr, init_rl, init_c0_sz, init_c1_sz, init_c2_sz) = unsafe {
@@ -437,7 +437,7 @@ mod test {
             .collect();
 
         // Build the DLX structure
-        let mut dlx = EfficientDancingLinks::from_matrix(&grid);
+        let dlx = EfficientDancingLinks::from_matrix(&grid);
 
         // Prepare containers for the search
         let mut solution: Vec<*mut Node> = Vec::new();
