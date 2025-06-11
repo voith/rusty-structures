@@ -5,32 +5,31 @@ pub struct Node {
     row_id: usize,
     size: usize,
     column: *mut Node,
-    left : *mut Node,
-    right : *mut Node,
-    up : *mut Node,
-    down : *mut Node,
+    left: *mut Node,
+    right: *mut Node,
+    up: *mut Node,
+    down: *mut Node,
 }
-
 
 impl Node {
     fn new(row_id: usize) -> Box<Self> {
-        let mut node = Box::new(Node { 
+        let mut node = Box::new(Node {
             row_id: row_id,
-             size: 0,
-             column: ptr::null_mut(), 
-             left: ptr::null_mut(),
-             right: ptr::null_mut(),
-             up: ptr::null_mut(),
-             down: ptr::null_mut()
+            size: 0,
+            column: ptr::null_mut(),
+            left: ptr::null_mut(),
+            right: ptr::null_mut(),
+            up: ptr::null_mut(),
+            down: ptr::null_mut(),
         });
-        
+
         let node_ptr = &mut *node;
         (*node_ptr).column = node_ptr;
         (*node_ptr).left = node_ptr;
         (*node_ptr).right = node_ptr;
         (*node_ptr).up = node_ptr;
         (*node_ptr).down = node_ptr;
-        
+
         node
     }
 }
@@ -41,18 +40,19 @@ pub struct EfficientDancingLinks {
     _rows: Vec<Box<Node>>,
 }
 
-
 impl EfficientDancingLinks {
-
     pub fn from_matrix(grid: &Vec<Vec<bool>>) -> Box<Self> {
-        assert!(!grid.is_empty() && !grid[0].is_empty(), "matrix must be nonempty");
+        assert!(
+            !grid.is_empty() && !grid[0].is_empty(),
+            "matrix must be nonempty"
+        );
 
         let mut root = Node::new(0);
         let root_ptr: *mut _ = &mut *root;
         let no_columns = grid[0].len();
         let mut column_headers: Vec<Box<Node>> = Vec::with_capacity(no_columns);
         let mut rows_vec: Vec<Box<Node>> = Vec::new();
-        
+
         for _ in 0..no_columns {
             let mut column = Node::new(0);
             let column_ptr = &mut *column;
@@ -81,7 +81,7 @@ impl EfficientDancingLinks {
                     (*column_ptr).up = row_node_ptr;
                     (*column_ptr).size += 1;
                 }
-                
+
                 unsafe {
                     if !previous_node_ptr.is_null() {
                         (*row_node_ptr).left = previous_node_ptr;
@@ -97,7 +97,7 @@ impl EfficientDancingLinks {
         Box::new(EfficientDancingLinks {
             root,
             _column_headers: column_headers,
-            _rows: rows_vec
+            _rows: rows_vec,
         })
     }
 
@@ -137,19 +137,12 @@ impl EfficientDancingLinks {
         }
     }
 
-    pub fn search(
-        &self,
-        solution: &mut Vec<*mut Node>,
-        results:  &mut Vec<Vec<usize>>
-    ) {
+    pub fn search(&self, solution: &mut Vec<*mut Node>, results: &mut Vec<Vec<usize>>) {
         unsafe {
             let root_ptr = &*self.root as *const Node as *mut Node;
             // If no columns remain, store the solution.
             if (*root_ptr).right == root_ptr {
-                let row_ids: Vec<usize> = solution
-                .iter()
-                .map(|&_node| (*_node).row_id)
-                .collect();
+                let row_ids: Vec<usize> = solution.iter().map(|&_node| (*_node).row_id).collect();
                 results.push(row_ids);
                 return;
             }
@@ -169,16 +162,16 @@ impl EfficientDancingLinks {
             };
             Self::cover(column_ptr);
             let mut fwd_row = (*column_ptr).down;
-            while  fwd_row != column_ptr {  
+            while fwd_row != column_ptr {
                 solution.push(fwd_row);
                 let mut fwd_next_row = (*fwd_row).right;
                 while fwd_next_row != fwd_row {
                     Self::cover((*fwd_next_row).column);
                     fwd_next_row = (*fwd_next_row).right;
                 }
-                
+
                 self.search(solution, results);
-                
+
                 // backtrack
                 let bck_row = solution.pop().unwrap();
                 let mut bck_next_row = (*bck_row).left;
@@ -191,7 +184,6 @@ impl EfficientDancingLinks {
             Self::uncover(column_ptr);
         }
     }
-    
 }
 
 #[cfg(test)]
@@ -201,14 +193,14 @@ mod test {
     #[test]
     fn test_new_node() {
         let node = Node::new(1);
-        let node_ptr = &*node  as *const Node as *mut Node;
-        
+        let node_ptr = &*node as *const Node as *mut Node;
+
         assert_eq!(node.column, node_ptr);
         assert_eq!(node.left, node_ptr);
         assert_eq!(node.right, node_ptr);
         assert_eq!(node.up, node_ptr);
         assert_eq!(node.down, node_ptr);
-        
+
         assert_eq!(node.row_id, 1);
         assert_eq!(node.size, 0);
     }
@@ -219,10 +211,7 @@ mod test {
         // │ 1 0 │
         // │ 0 1 │
         // └     ┘
-        let grid = vec![
-            vec![true,  false],
-            vec![false, true ],
-        ];
+        let grid = vec![vec![true, false], vec![false, true]];
         let mut dlx = EfficientDancingLinks::from_matrix(&grid);
 
         // pointers to root and columns
@@ -240,7 +229,7 @@ mod test {
             assert_eq!((*col0_ptr).right, col1_ptr);
             assert_eq!((*col1_ptr).right, root_ptr);
             //    backwards:
-            assert_eq!((*root_ptr).left,  col1_ptr);
+            assert_eq!((*root_ptr).left, col1_ptr);
             assert_eq!((*col1_ptr).left, col0_ptr);
             assert_eq!((*col0_ptr).left, root_ptr);
 
@@ -263,12 +252,12 @@ mod test {
                 assert_eq!((*n_ptr).row_id, i);
 
                 // horizontal: single‐node circle
-                assert_eq!((*n_ptr).left,  n_ptr);
+                assert_eq!((*n_ptr).left, n_ptr);
                 assert_eq!((*n_ptr).right, n_ptr);
 
                 // vertical: should live in its column’s circular list
                 assert_eq!((*(*n_ptr).up).down, n_ptr);
-                assert_eq!((*(*n_ptr).down).up,   n_ptr);
+                assert_eq!((*(*n_ptr).down).up, n_ptr);
 
                 // column pointer is correct
                 assert_eq!((*n_ptr).column, expected_col);
@@ -285,9 +274,9 @@ mod test {
         // │ 0 0 1 │
         // └       ┘
         let grid = vec![
-            vec![true,  false, false],
-            vec![false, true,  false],
-            vec![false, false, true ],
+            vec![true, false, false],
+            vec![false, true, false],
+            vec![false, false, true],
         ];
         let mut dlx = EfficientDancingLinks::from_matrix(&grid);
 
@@ -308,7 +297,7 @@ mod test {
             assert_eq!((*col1_ptr).right, col2_ptr);
             assert_eq!((*col2_ptr).right, root_ptr);
             //    backwards:
-            assert_eq!((*root_ptr).left,  col2_ptr);
+            assert_eq!((*root_ptr).left, col2_ptr);
             assert_eq!((*col2_ptr).left, col1_ptr);
             assert_eq!((*col1_ptr).left, col0_ptr);
             assert_eq!((*col0_ptr).left, root_ptr);
@@ -339,12 +328,12 @@ mod test {
                 assert_eq!((*n_ptr).row_id, i);
 
                 // horizontal: single‐node loop
-                assert_eq!((*n_ptr).left,  n_ptr);
+                assert_eq!((*n_ptr).left, n_ptr);
                 assert_eq!((*n_ptr).right, n_ptr);
 
                 // vertical: in its column’s circular list
-                assert_eq!((*(*n_ptr).up).down,   n_ptr);
-                assert_eq!((*(*n_ptr).down).up,   n_ptr);
+                assert_eq!((*(*n_ptr).up).down, n_ptr);
+                assert_eq!((*(*n_ptr).down).up, n_ptr);
 
                 // column pointer correct
                 assert_eq!((*n_ptr).column, expected_col);
@@ -360,9 +349,9 @@ mod test {
         // R1  1    1    0
         // R2  0    0    1
         let grid = vec![
-            vec![true,  false, false],
-            vec![true,  true,  false],
-            vec![false, false, true ],
+            vec![true, false, false],
+            vec![true, true, false],
+            vec![false, false, true],
         ];
         let mut dlx = EfficientDancingLinks::from_matrix(&grid);
 
@@ -389,7 +378,7 @@ mod test {
         unsafe {
             // after cover, C0 is spliced out: root.right should now be C1
             assert_eq!((*root_ptr).right, col1_ptr);
-            assert_eq!((*col1_ptr).left,  root_ptr);
+            assert_eq!((*col1_ptr).left, root_ptr);
             // C0 should no longer be adjacent to root
             assert_ne!((*root_ptr).left, col0_ptr);
             assert_ne!((*root_ptr).right, col0_ptr);
@@ -401,7 +390,7 @@ mod test {
         unsafe {
             // root links restored
             assert_eq!((*root_ptr).right, init_rr);
-            assert_eq!((*root_ptr).left,  init_rl);
+            assert_eq!((*root_ptr).left, init_rl);
 
             // column sizes restored
             assert_eq!((*col0_ptr).size, init_c0_sz);
@@ -412,8 +401,8 @@ mod test {
             let mut v = (*col0_ptr).down;
             while v != col0_ptr {
                 // each node in C0 should point back into the column
-                assert_eq!((*(*v).down).up,   v);
-                assert_eq!((*(*v).up).down,   v);
+                assert_eq!((*(*v).down).up, v);
+                assert_eq!((*(*v).up).down, v);
                 v = (*v).down;
             }
         }

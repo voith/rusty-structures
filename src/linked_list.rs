@@ -3,27 +3,22 @@ use std::io::{self, Write};
 
 struct Node<T> {
     value: T,
-    next: Option<Box<Node<T>>>
+    next: Option<Box<Node<T>>>,
 }
 
 pub struct LinkedList<T> {
-    root: Option<Box<Node<T>>>
+    root: Option<Box<Node<T>>>,
 }
 
-impl <T> Node<T> {
+impl<T> Node<T> {
     fn new(value: T) -> Self {
-        Node {
-            value,
-            next: None
-        }
+        Node { value, next: None }
     }
 }
 
-impl <T: PartialEq + Display + Clone> LinkedList<T> {
+impl<T: PartialEq + Display + Clone> LinkedList<T> {
     pub fn new() -> Self {
-        LinkedList {
-            root: None
-        }
+        LinkedList { root: None }
     }
 
     pub fn add(&mut self, value: T) {
@@ -33,7 +28,7 @@ impl <T: PartialEq + Display + Clone> LinkedList<T> {
             return;
         }
         let mut current_node = self.root.as_mut().unwrap();
-        while let Some(ref mut next_node) = current_node.next  {
+        while let Some(ref mut next_node) = current_node.next {
             current_node = next_node;
         }
         current_node.next = new_node;
@@ -82,10 +77,9 @@ impl <T: PartialEq + Display + Clone> LinkedList<T> {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use super::*; 
+    use super::*;
     use std::io::Cursor;
 
     #[test]
@@ -108,10 +102,10 @@ mod test {
         let v = linked_list.to_vector();
         assert_eq!(v, vec![1, 3]);
     }
-    
+
     #[test]
     fn test_empty_list() {
-        let linked_list: LinkedList<i32>  = LinkedList::new();
+        let linked_list: LinkedList<i32> = LinkedList::new();
         let v = linked_list.to_vector();
         assert_eq!(v, vec![]);
     }
@@ -125,7 +119,7 @@ mod test {
         linked_list.remove(2);
         linked_list.remove(1);
         linked_list.remove(3);
-        let v= linked_list.to_vector();
+        let v = linked_list.to_vector();
         assert_eq!(v, vec![]);
     }
 
@@ -137,7 +131,7 @@ mod test {
         linked_list.add(3);
         linked_list.remove(1);
         let v = linked_list.to_vector();
-        assert_eq!(v, vec![2,3]);
+        assert_eq!(v, vec![2, 3]);
     }
 
     #[test]

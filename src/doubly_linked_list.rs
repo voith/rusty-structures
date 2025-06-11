@@ -1,37 +1,35 @@
 use std::{
     cell::RefCell,
-    fmt::Display, 
-    io::{stdout, Write},
-    rc::Rc
+    fmt::Display,
+    io::{Write, stdout},
+    rc::Rc,
 };
 
-type Link<T> = Option<Rc<RefCell<Node<T>>>>; 
+type Link<T> = Option<Rc<RefCell<Node<T>>>>;
 
 struct Node<T> {
     value: T,
     previous: Link<T>,
-    next: Link<T>
+    next: Link<T>,
 }
 
 pub struct DoublyLinkedList<T> {
-    head: Link<T>
+    head: Link<T>,
 }
 
-impl <T> Node<T> {
+impl<T> Node<T> {
     fn new(value: T, previous: Link<T>) -> Self {
         Node {
             value,
             previous,
-            next: None
+            next: None,
         }
     }
 }
 
-impl <T: PartialEq + Display + Clone> DoublyLinkedList<T> {
+impl<T: PartialEq + Display + Clone> DoublyLinkedList<T> {
     pub fn new() -> Self {
-        DoublyLinkedList {
-            head: None
-        }
+        DoublyLinkedList { head: None }
     }
 
     pub fn add(&mut self, value: T) {
@@ -48,7 +46,10 @@ impl <T: PartialEq + Display + Clone> DoublyLinkedList<T> {
         } {
             current_node = next_node;
         }
-        current_node.borrow_mut().next = Some(Rc::new(RefCell::new(Node::new(value, Some(Rc::clone(&current_node))))));
+        current_node.borrow_mut().next = Some(Rc::new(RefCell::new(Node::new(
+            value,
+            Some(Rc::clone(&current_node)),
+        ))));
     }
 
     pub fn remove(&mut self, value: T) {
@@ -98,14 +99,16 @@ impl <T: PartialEq + Display + Clone> DoublyLinkedList<T> {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use std::io::Cursor;
 
     use super::*;
 
-    fn  check_output<T: PartialEq + Display + Clone>(list: &DoublyLinkedList<T>, expected_str: &str) {
+    fn check_output<T: PartialEq + Display + Clone>(
+        list: &DoublyLinkedList<T>,
+        expected_str: &str,
+    ) {
         let mut buffer = Cursor::new(Vec::new());
         list.print_to_writer(&mut buffer);
 
@@ -124,22 +127,22 @@ mod test {
         let first_element = list.head.as_ref().unwrap().clone();
         let second_element = first_element.borrow().next.as_ref().unwrap().clone();
         let third_element = second_element.borrow().next.as_ref().unwrap().clone();
-        
+
         assert!(first_element.borrow().previous.is_none());
         assert!(Rc::ptr_eq(
-            first_element.borrow().next.as_ref().unwrap(), 
+            first_element.borrow().next.as_ref().unwrap(),
             &second_element
         ));
         assert!(Rc::ptr_eq(
-            &first_element, 
+            &first_element,
             second_element.borrow().previous.as_ref().unwrap()
         ));
         assert!(Rc::ptr_eq(
-            second_element.borrow().next.as_ref().unwrap(), 
+            second_element.borrow().next.as_ref().unwrap(),
             &third_element
         ));
         assert!(Rc::ptr_eq(
-            &second_element, 
+            &second_element,
             &third_element.borrow().previous.as_ref().unwrap()
         ));
         assert!(third_element.borrow().next.is_none());
@@ -157,17 +160,17 @@ mod test {
         list.add(3);
         list.remove(2);
         check_output(&list, "1\n3\n");
-        
+
         let first_element = list.head.as_ref().unwrap().clone();
         let second_element = first_element.borrow().next.as_ref().unwrap().clone();
-        
+
         assert!(first_element.borrow().previous.is_none());
         assert!(Rc::ptr_eq(
-            first_element.borrow().next.as_ref().unwrap(), 
+            first_element.borrow().next.as_ref().unwrap(),
             &second_element
         ));
         assert!(Rc::ptr_eq(
-            &first_element, 
+            &first_element,
             second_element.borrow().previous.as_ref().unwrap()
         ));
         assert!(second_element.borrow().next.is_none());
@@ -184,17 +187,17 @@ mod test {
         list.add(3);
         list.remove(1);
         check_output(&list, "2\n3\n");
-        
+
         let first_element = list.head.as_ref().unwrap().clone();
         let second_element = first_element.borrow().next.as_ref().unwrap().clone();
 
         assert!(first_element.borrow().previous.is_none());
         assert!(Rc::ptr_eq(
-            first_element.borrow().next.as_ref().unwrap(), 
+            first_element.borrow().next.as_ref().unwrap(),
             &second_element
         ));
         assert!(Rc::ptr_eq(
-            &first_element, 
+            &first_element,
             second_element.borrow().previous.as_ref().unwrap()
         ));
 
@@ -219,17 +222,17 @@ mod test {
         list.add(3);
         list.remove(3);
         check_output(&list, "1\n2\n");
-        
+
         let first_element = list.head.as_ref().unwrap().clone();
         let second_element = first_element.borrow().next.as_ref().unwrap().clone();
-        
+
         assert!(first_element.borrow().previous.is_none());
         assert!(Rc::ptr_eq(
-            first_element.borrow().next.as_ref().unwrap(), 
+            first_element.borrow().next.as_ref().unwrap(),
             &second_element
         ));
         assert!(Rc::ptr_eq(
-            &first_element, 
+            &first_element,
             second_element.borrow().previous.as_ref().unwrap()
         ));
         assert!(second_element.borrow().next.is_none());
@@ -249,14 +252,14 @@ mod test {
 
         let first_element = list.head.as_ref().unwrap().clone();
         let second_element = first_element.borrow().next.as_ref().unwrap().clone();
-        
+
         assert!(first_element.borrow().previous.is_none());
         assert!(Rc::ptr_eq(
-            first_element.borrow().next.as_ref().unwrap(), 
+            first_element.borrow().next.as_ref().unwrap(),
             &second_element
         ));
         assert!(Rc::ptr_eq(
-            &first_element, 
+            &first_element,
             second_element.borrow().previous.as_ref().unwrap()
         ));
         assert!(second_element.borrow().next.is_none());
