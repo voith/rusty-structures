@@ -339,8 +339,9 @@ struct SudokuSolver {
 
 impl SudokuSolver {
     const GRID_SIZE: usize = 9;
-    const NO_COLUMNS: usize = 4 * 9 * 9;
-    const NO_ROWS: usize = 9 * 9 * 9;
+    const NO_COLUMNS: usize = 4 * Self::GRID_SIZE * Self::GRID_SIZE;
+    const NO_ROWS: usize = Self::GRID_SIZE * Self::GRID_SIZE * Self::GRID_SIZE;
+    const BOX_ROW_SIZE: usize = 3;
 
     #[allow(dead_code)]
     fn build_row(row_no: usize, col_no: usize, digit: usize) -> [u8; 324] {
@@ -418,19 +419,24 @@ impl SudokuSolver {
         Some(grid)
     }
 
-    #[allow(dead_code)]
-    fn  pretty_print_grid(grid: &Vec<Vec<u8>>) {
-        println!("problem:");
+    
+    fn  _pretty_print_grid(grid: &Vec<Vec<u8>>, title: &str) {
+        println!("{}", title);
+        // " d |" -> len 4
+        // "|" -> Self::BOX_ROW_SIZE number of extra `|` for demarcation of each box
+        // "|" -> 2 extra `|` at the start and end of each row
+        // total_size = Self::GRID_SIZE * 4 + Self::BOX_ROW_SIZE + 2;
+        let row_display_size = Self::GRID_SIZE * 4 + Self::BOX_ROW_SIZE + 2;
         for (row_no, row) in grid.iter().enumerate() {
-            if row_no % 3 == 0 {
-                println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+            if row_no % Self::BOX_ROW_SIZE == 0 {
+                println!("{}", "=".repeat(row_display_size));
             }
             else {
-                println!("{}", "-".repeat(Self::GRID_SIZE * 4 + 5));
+                println!("{}", "-".repeat(row_display_size));
             }
             print!("|");
             for (col_no, &cell) in row.iter().enumerate() {
-                if col_no % 3 == 0 {
+                if col_no % Self::BOX_ROW_SIZE == 0 {
                     print!("|");
                 }
                 if cell == 0 {
@@ -442,29 +448,18 @@ impl SudokuSolver {
             }
             println!("|");
         }
-        println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+        println!("{}", "=".repeat(row_display_size));
+    }
+
+    #[allow(dead_code)]
+    fn  pretty_print_grid(grid: &Vec<Vec<u8>>) {
+        Self::_pretty_print_grid(grid, "problem:");
     }
 
     #[allow(dead_code)]
     fn pretty_print_solution(grid: &Vec<[u8; Self::GRID_SIZE]>) {
-        println!("solution:");
-        for (row_no, row) in grid.iter().enumerate() {
-            if row_no % 3 == 0 {
-                println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
-            }
-            else {
-                println!("{}", "-".repeat(Self::GRID_SIZE * 4 + 5));
-            }
-            print!("|");
-            for (col_no, &cell) in row.iter().enumerate() {
-                if col_no % 3 == 0 {
-                    print!("|");
-                }
-                print!(" {} |", cell);
-            }
-            println!("|");
-        }
-        println!("{}", "=".repeat(Self::GRID_SIZE * 4 + 5));
+        let converted_grid: Vec<Vec<u8>> = grid.iter().map(|arr| arr.to_vec()).collect();
+        Self::_pretty_print_grid(&converted_grid, "solution:");
     }
     
 }
