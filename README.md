@@ -9,6 +9,12 @@ A collection of basic data structures implemented in Rust, designed to help you 
     - Conversion to vector for easier testing
     - Clean and idiomatic Rust code
 
+- B-tree (`BTree`, `btree.rs`)
+    - Small insert/get-focused implementation meant for learning
+    - Node splitting logic for keeping the tree balanced
+    - Tests covering inserts, lookups, duplicate-key replacement, and root splits
+    - `egui` visualizer binary for inserting keys, querying values, and viewing the tree structure interactively
+
 - Doubly Linked List (DoublyLinkedList)
     - Bidirectional links (previous and next)
     - Safe shared ownership with Rc and interior mutability using RefCell
@@ -41,6 +47,11 @@ cd rusty-structures
 Build and run tests:
 ```bash
 cargo test
+```
+
+Run the B-tree visualizer:
+```bash
+cargo run --bin btree_visualizer
 ```
 
 ## 📚 Learning Goals
