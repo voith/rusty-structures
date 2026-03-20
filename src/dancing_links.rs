@@ -221,7 +221,9 @@ impl DancingLinks {
                 up.borrow_mut().down = Some(current_cell);
                 current_cell = next;
             }
-            current_node = { current_node.borrow().up.clone().unwrap() };
+            current_node = { 
+                current_node.borrow().up.clone().unwrap() 
+            };
         }
 
         {
@@ -260,7 +262,9 @@ impl DancingLinks {
                 if c.borrow().size < best.borrow().size {
                     best = c.clone();
                 }
-                c = { c.borrow().right.clone().unwrap() };
+                c = { 
+                    c.borrow().right.clone().unwrap() 
+                };
             }
             best
         };
