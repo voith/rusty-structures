@@ -36,8 +36,6 @@
 //!
 //! Current problems and limitations:
 //! - This is not a production-ready replacement for `std::sync::OnceLock`.
-//! - The retry path currently uses recursion when initialization previously
-//!   failed, which can grow the stack if retries keep happening.
 //! - Waiting threads use a busy spin with `thread::yield_now()`, which is
 //!   simple but inefficient under contention.
 //! - Re-entrant initialization on the same `OnceLock` is not handled
@@ -138,6 +136,7 @@ mod tests {
     use std::panic::{self, AssertUnwindSafe};
     use std::sync::Arc;
     use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn new_starts_uninitialized() {
@@ -255,5 +254,44 @@ mod tests {
         assert_eq!(second.join().unwrap(), 55);
         assert_eq!(attempts.load(Ordering::SeqCst), 2);
         assert_eq!(lock.state.load(Ordering::Acquire), INITIALIZED);
+    }
+
+    #[test]
+    fn waiting_thread_retries_after_initializer_panics() {
+        let lock = Arc::new(OnceLock::new());
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let first_started = Arc::new(AtomicUsize::new(0));
+
+        let first_lock = Arc::clone(&lock);
+        let first_attempts = Arc::clone(&attempts);
+        let first_started_flag = Arc::clone(&first_started);
+        let panicking_thread = thread::spawn(move || {
+            let _ = panic::catch_unwind(AssertUnwindSafe(|| {
+                first_lock.get_or_init(|| -> usize {
+                    first_attempts.fetch_add(1, Ordering::SeqCst);
+                    first_started_flag.store(1, Ordering::SeqCst);
+                    thread::sleep(Duration::from_millis(20));
+                    panic!("first init fails");
+                });
+            }));
+        });
+
+        while first_started.load(Ordering::SeqCst) == 0 {
+            thread::yield_now();
+        }
+
+        let second_lock = Arc::clone(&lock);
+        let second_attempts = Arc::clone(&attempts);
+        let waiting_thread = thread::spawn(move || {
+            *second_lock.get_or_init(|| {
+                second_attempts.fetch_add(1, Ordering::SeqCst);
+                88
+            })
+        });
+
+        panicking_thread.join().unwrap();
+        assert_eq!(waiting_thread.join().unwrap(), 88);
+        assert_eq!(attempts.load(Ordering::SeqCst), 2);
+        assert_eq!(*lock.get_or_init(|| 99), 88);
     }
 }
